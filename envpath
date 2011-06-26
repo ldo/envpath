@@ -1,0 +1,45 @@
+#!/usr/bin/python3
+#+
+# This script allows convenient editing of the contents
+# of the value of an environment variable that consists
+# of colon-separated components; it can add new components
+# (avoiding duplicates) and remove components. It also
+# treats the value "." specially, ensuring it stays at the
+# end if it was there to begin with and is not removed.
+#
+# The new value is written to standard output. This allows
+# updating of the variable with shell commands like
+#
+#     PATH="$(envpath PATH append /path/to/new/dir)"
+#
+# Written by Lawrence D'Oliveiro <ldo@geek-central.gen.nz>.
+#-
+
+import sys
+import os
+
+if len(sys.argv) < 3 :
+    raise RuntimeError("Usage: %s <pathvar> <cmd> <dir> ..." % sys.argv[0])
+#end if
+
+pathvar = sys.argv[1]
+cmd = sys.argv[2]
+dirs = os.environ.get(pathvar, "").split(":")
+newdirs = sys.argv[3:]
+atend = []
+if cmd == "append" or cmd == "prepend" :
+    newdirs = list(d for d in newdirs if d not in dirs)
+    if len(dirs) != 0 and dirs[-1] == "." :
+        atend = [dirs.pop()]
+    #end if
+#end if
+if cmd == "append" :
+    dirs += newdirs
+elif cmd == "prepend" :
+    dirs = newdirs + dirs
+elif cmd == "remove" :
+    dirs = list(d for d in dirs if d not in newdirs)
+else :
+    raise RuntimeError("unrecognized command \"%s\"" % cmd)
+#end if
+sys.stdout.write(":".join(dirs + atend) + "\n")
